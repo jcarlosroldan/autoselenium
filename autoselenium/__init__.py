@@ -11,6 +11,7 @@ from time import time, sleep
 from urllib.request import urljoin
 
 PATH_RESOURCES = join(dirname(__file__), 'resources')
+
 with open(join(PATH_RESOURCES, 'add_render.js'), 'r', encoding='utf-8') as fp:
     SCRIPT_ADD_RENDER = fp.read()
 
@@ -111,11 +112,11 @@ def download_file(url, path=None, chunk_size=10**5):
 
 def bytes_to_human(size, decimal_places=2):
     ''' Returns a human readable file size from a number of bytes. '''
-    for unit in ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']:
-        if size < 1024:
-            break
+    unit = 0
+    while size > 1024:
         size /= 1024
-    return f'{size:.{decimal_places}f}{unit}B'
+        unit += 1
+    return '%.*f%sB' % (decimal_places, size, ' kMGTPEZY'[unit])
 
 
 def seconds_to_human(seconds):
