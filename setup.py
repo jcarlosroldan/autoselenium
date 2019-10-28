@@ -1,6 +1,7 @@
 from setuptools import find_packages, setup
+from sys import version_info
 
-if sys.version_info[0] != 3:
+if version_info[0] != 3:
     print("This script requires Python 3.")
     exit()
 
@@ -12,7 +13,7 @@ with open('requirements.txt', 'r', encoding='utf-8') as f:
 
 setup(
     name='autoselenium',
-    version='0.0.2',
+    version='0.0.3',
     author='Juan C. Roldán',
     author_email='juancarlos@sevilla.es',
     description='Ready-to-run Selenium.',
