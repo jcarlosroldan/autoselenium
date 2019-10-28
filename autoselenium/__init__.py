@@ -19,7 +19,7 @@ with open(join(PATH_RESOURCES, 'add_render.js'), 'r', encoding='utf-8') as fp:
 
 
 class Firefox(SeleniumFirefox):
-    URL_GECKODRIVER = 'https://github.com/mozilla/geckodriver/releases/tag/v%s'
+    URL_DRIVER = 'https://github.com/mozilla/geckodriver/releases/tag/v%s'
     REGEX_LINK = 'href="(/mozilla/geckodriver/releases/download/.+?%s.+?)"'
 
     def __init__(self, headless=False, disable_images=True, open_links_same_tab=False, disable_flash=True, detect_driver_path=True, timeout=15, geckodriver_version=GECKODRIVER_VERSION, options=None, *args, **kwargs):
@@ -62,7 +62,7 @@ class Firefox(SeleniumFirefox):
             return None, None
         driver_path = join(PATH_RESOURCES, 'geckodriver-%s' % identifier)
         if not exists(driver_path):
-            url = Firefox.URL_GECKODRIVER % geckodriver_version
+            url = Firefox.URL_DRIVER % geckodriver_version
             page = get(url).text
             url_driver = urljoin(url, findall(Firefox.REGEX_LINK % identifier, page)[0])
             compressed_path = join(PATH_RESOURCES, url_driver.rsplit('/', 1)[1])
