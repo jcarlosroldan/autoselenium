@@ -56,11 +56,6 @@ It also implements one extra function, `driver.get_with_render(url, render_selec
 * Updated defaults: some of the most common driver configurations are automatically set, such as disabling Flash, ignoring the txt log file or closing the driver when the program ends. All of them can be edited via construction params.
 * Rendering analysis: the rendering features such as computed style, width, height or XPath are added to the page source when using `driver.get_with_render` instead of `driver.get`.
 
-Some features to be expected in the future:
-
-* Support for Chrome and Safari drivers.
-* Automatic portable Firefox installation: it involves uncompressing zip, 7z, tar.gz, tar.bz2 and xar files.
-
 ## Contributions ✨
 
 You can take any of the pending [enhancements](https://github.com/juancroldan/autoselenium/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement), work on it and open a pull request.
@@ -72,7 +67,7 @@ You can take any of the pending [enhancements](https://github.com/juancroldan/au
 Relased on Oct 28, 2019.
 
 * More helpful exceptions (including install exceptions).
-* Friendlier readme
+* Friendlier readme.
 * Bugfix: now compatible with any Python 3 library.
 
 ### v0.0.1
