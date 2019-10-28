@@ -5,7 +5,7 @@ upload_linux.sh
 upload_windows.sh
 
 # Byte-compiled / optimized / DLL files
-*/__pycache__/
+__pycache__/
 *.py[cod]
 *$py.class
 
