@@ -12,7 +12,6 @@ from time import time, sleep
 from urllib.request import urljoin
 
 PATH_RESOURCES = join(dirname(__file__), 'resources')
-GECKODRIVER_VERSION = '0.26.0'
 
 with open(join(PATH_RESOURCES, 'add_render.js'), 'r', encoding='utf-8') as fp:
     SCRIPT_ADD_RENDER = fp.read()
@@ -20,9 +19,10 @@ with open(join(PATH_RESOURCES, 'add_render.js'), 'r', encoding='utf-8') as fp:
 
 class Firefox(SeleniumFirefox):
     URL_DRIVER = 'https://github.com/mozilla/geckodriver/releases/tag/v%s'
+    VERSION_DRIVER = '0.26.0'
     REGEX_LINK = 'href="(/mozilla/geckodriver/releases/download/.+?%s.+?)"'
 
-    def __init__(self, headless=False, disable_images=True, open_links_same_tab=False, disable_flash=True, detect_driver_path=True, timeout=15, geckodriver_version=GECKODRIVER_VERSION, options=None, *args, **kwargs):
+    def __init__(self, headless=False, disable_images=True, open_links_same_tab=False, disable_flash=True, detect_driver_path=True, timeout=15, driver_version=Firefox.VERSION_DRIVER, options=None, *args, **kwargs):
         ''' Returns a Firefox webdriver with customised configuration. '''
         if options is None:
             options = Options()
@@ -36,19 +36,19 @@ class Firefox(SeleniumFirefox):
         if disable_images:
             options.set_preference('permissions.default.image', 2)
         if detect_driver_path:
-            exec_path, log_path = self.find_driver_path(geckodriver_version)
+            exec_path, log_path = self.find_driver_path(driver_version)
             if exec_path is None:
                 raise RuntimeError('Platform %s not recognised. Please install geckodriver manually, add it to the PATH, and set the detect_driver_path to False.' % sys.platform)
             try:
                 SeleniumFirefox.__init__(self, options=options, executable_path=exec_path, service_log_path=log_path, *args, **kwargs)
             except SessionNotCreatedException as e:
-                raise RuntimeError('Please, install a Firefox compatible with Geckodriver %s from this compatibility table: https://firefox-source-docs.mozilla.org/testing/geckodriver/Support.html.' % GECKODRIVER_VERSION) from e
+                raise RuntimeError('Please, install a Firefox compatible with Geckodriver %s from this compatibility table: https://firefox-source-docs.mozilla.org/testing/geckodriver/Support.html.' % Firefox.VERSION_DRIVER) from e
         else:
             SeleniumFirefox.__init__(self, options=options, *args, **kwargs)
         self.set_page_load_timeout(timeout)
         register(self.quit)
 
-    def find_driver_path(self, geckodriver_version):
+    def find_driver_path(self, driver_version):
         null_path = '/dev/null'
         bits = 64 if maxsize > 2**32 else 32
         if platform.startswith('linux'):
@@ -62,7 +62,7 @@ class Firefox(SeleniumFirefox):
             return None, None
         driver_path = join(PATH_RESOURCES, 'geckodriver-%s' % identifier)
         if not exists(driver_path):
-            url = Firefox.URL_DRIVER % geckodriver_version
+            url = Firefox.URL_DRIVER % driver_version
             page = get(url).text
             url_driver = urljoin(url, findall(Firefox.REGEX_LINK % identifier, page)[0])
             compressed_path = join(PATH_RESOURCES, url_driver.rsplit('/', 1)[1])
