@@ -3,20 +3,20 @@
 This Python 3 library solves most of the tasks that are usually related to use Selenium in a project. The main features of this library are:
 
 * Full Selenium compatibility: the automatic drivers inherit the Selenium driver, so every available functionality is preserved.
-* Geckodriver management: the latest valid Geckodriver is automatically downloaded, unzipped and stored according to the selenium version and operative system.
+* Geckodriver management: the latest valid Geckodriver is automatically downloaded, unzipped and stored according to the Selenium version and operative system.
 * Updated defaults: some of the most common driver configurations are automatically set, such as disabling Flash, ignoring the txt log file or closing the driver when the program ends. All of them can be edited via construction params.
 * Rendering analysis: the rendering features such as computed style, width, height or XPath are added to the page source when using `driver.get_with_render` instead of `driver.get`.
 
 Some features to be expected in the future are:
 
 * Support for Chrome and Safari drivers.
-* Parameters to set the window width and height.
-* Parameter to set phone mode.
+* Automatic portable Firefox installation: it involves uncompressing zip, 7z, tar.gz, tar.bz2 and xar files.
 
 ## How to install
 
-You can install this library via pip using:
-```pip install autoselenium```
+
+1. Install any of the geckodriver 0.26.0 Firefox supported versions (see [compatibility table](https://firefox-source-docs.mozilla.org/testing/geckodriver/Support.html))
+2. Install this library via pip using: `pip install autoselenium`
 
 ## Usage example
 
