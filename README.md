@@ -1,6 +1,6 @@
 # AutoSelenium: Ready-to-run Selenium
 
-This Python 3 library solves most of the tasks that are usually related to use Selenium in a project.
+This Python 3 library solves most of the problems usually found when using Selenium.
 
 ## Installing
 
