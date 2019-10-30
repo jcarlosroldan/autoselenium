@@ -22,7 +22,7 @@ class Firefox(SeleniumFirefox):
     VERSION_DRIVER = '0.26.0'
     REGEX_LINK = 'href="(/mozilla/geckodriver/releases/download/.+?%s.+?)"'
 
-    def __init__(self, headless=False, disable_images=True, open_links_same_tab=False, disable_flash=True, detect_driver_path=True, timeout=15, driver_version=Firefox.VERSION_DRIVER, options=None, *args, **kwargs):
+    def __init__(self, headless=False, disable_images=True, open_links_same_tab=False, disable_flash=True, detect_driver_path=True, timeout=15, driver_version='default', options=None, *args, **kwargs):
         ''' Returns a Firefox webdriver with customised configuration. '''
         if options is None:
             options = Options()
@@ -35,6 +35,8 @@ class Firefox(SeleniumFirefox):
             options.headless = True
         if disable_images:
             options.set_preference('permissions.default.image', 2)
+        if driver_version == 'default':
+            driver_version = Firefox.VERSION_DRIVER
         if detect_driver_path:
             exec_path, log_path = self.find_driver_path(driver_version)
             if exec_path is None:
