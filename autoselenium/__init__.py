@@ -19,10 +19,12 @@ with open(join(PATH_RESOURCES, 'add_render.js'), 'r', encoding='utf-8') as fp:
 
 class Firefox(SeleniumFirefox):
     URL_DRIVER = 'https://github.com/mozilla/geckodriver/releases/tag/v%s'
+    URL_BROWSER = 'http://ftp.mozilla.org/pub/firefox/releases/%s/'
     VERSION_DRIVER = '0.26.0'
+    VERSION_BROWSER = '71.0'  # from https://firefox-source-docs.mozilla.org/testing/geckodriver/Support.html
     REGEX_LINK = 'href="(/mozilla/geckodriver/releases/download/.+?%s.+?)"'
 
-    def __init__(self, headless=False, disable_images=True, open_links_same_tab=False, disable_flash=True, detect_driver_path=True, timeout=15, driver_version='default', options=None, *args, **kwargs):
+    def __init__(self, browser_detection=True, browser_version='default', driver_detection=True, driver_version='default', headless=False, disable_images=True, open_links_same_tab=False, disable_flash=True, timeout=15, options=None, *args, **kwargs):
         ''' Returns a Firefox webdriver with customised configuration. '''
         if options is None:
             options = Options()
@@ -35,22 +37,22 @@ class Firefox(SeleniumFirefox):
             options.headless = True
         if disable_images:
             options.set_preference('permissions.default.image', 2)
-        if driver_version == 'default':
-            driver_version = Firefox.VERSION_DRIVER
-        if detect_driver_path:
-            exec_path, log_path = self.find_driver_path(driver_version)
-            if exec_path is None:
-                raise RuntimeError('Platform %s not recognised. Please install geckodriver manually, add it to the PATH, and set the detect_driver_path to False.' % sys.platform)
-            try:
-                SeleniumFirefox.__init__(self, options=options, executable_path=exec_path, service_log_path=log_path, *args, **kwargs)
-            except SessionNotCreatedException as e:
-                raise RuntimeError('Please, install a Firefox compatible with Geckodriver %s from this compatibility table: https://firefox-source-docs.mozilla.org/testing/geckodriver/Support.html.' % Firefox.VERSION_DRIVER) from e
-        else:
-            SeleniumFirefox.__init__(self, options=options, *args, **kwargs)
+        if browser_detection:
+            if browser_version == 'default':
+                browser_version = Firefox.VERSION_BROWSER
+            kwargs['firefox_binary'] = FirefoxBinary(self.detect_browser())
+        if driver_detection:
+            if driver_version == 'default':
+                driver_version = Firefox.VERSION_DRIVER
+            kwargs['executable_path'], kwargs['service_log_path'] = self.detect_driver(driver_version)
+        SeleniumFirefox.__init__(self, options=options, *args, **kwargs)
         self.set_page_load_timeout(timeout)
         register(self.quit)
 
-    def find_driver_path(self, driver_version):
+    def detect_browser(self, browser_version):
+        pass
+
+    def detect_driver(self, driver_version):
         null_path = '/dev/null'
         bits = 64 if maxsize > 2**32 else 32
         if platform.startswith('linux'):
@@ -61,7 +63,7 @@ class Firefox(SeleniumFirefox):
         elif platform == 'darwin':
             identifier = 'macos'
         else:
-            return None, None
+            raise RuntimeError('Platform %s not recognised. Please install geckodriver manually, add it to the PATH, and set the detect_driver_path to False.' % platform)
         driver_path = join(PATH_RESOURCES, 'geckodriver-%s' % identifier)
         if not exists(driver_path):
             url = Firefox.URL_DRIVER % driver_version
@@ -129,3 +131,6 @@ def bytes_to_human(size, decimal_places=2):
 def seconds_to_human(seconds):
     ''' Returns a human readable string from a number of seconds. '''
     return str(timedelta(seconds=int(seconds))).zfill(8)
+
+if __name__ == '__main__':
+    pass
