@@ -62,6 +62,8 @@ You can take any of the pending [enhancements](https://github.com/juancroldan/au
 
 ## Changes
 
+Find here the changes on this library (from recent to older) and the features of each version. We follow [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html) guidelines to improve the dependency management automation.
+
 ### v0.1.0
 
 Relased on Oct 28, 2019.
