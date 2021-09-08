@@ -1,14 +1,17 @@
 from atexit import register
 from datetime import timedelta
-from os import makedirs, remove, chmod
-from os.path import join, dirname, exists
-from re import findall
+from glob import glob
+from os import chmod, mkdir, remove, rmdir, rename
+from os.path import basename, dirname, exists, join
+from re import DOTALL, findall
 from requests import get
 from selenium.common.exceptions import SessionNotCreatedException
 from selenium.webdriver import Firefox as SeleniumFirefox
 from selenium.webdriver.firefox.options import Options
-from sys import platform, maxsize, stdout
-from time import time, sleep
+from shutil import copyfileobj, move
+from subprocess import run
+from sys import maxsize, platform, stdout
+from time import time
 from urllib.request import urljoin
 
 PATH_RESOURCES = join(dirname(__file__), 'resources')
@@ -19,6 +22,8 @@ with open(join(PATH_RESOURCES, 'add_render.js'), 'r', encoding='utf-8') as fp:
 
 class Firefox(SeleniumFirefox):
     URL_DRIVER = 'https://github.com/mozilla/geckodriver/releases/tag/v%s'
+    URL_RELEASES = 'https://ftp.mozilla.org/pub/firefox/releases/%s'
+    URL_TABLE = 'https://firefox-source-docs.mozilla.org/testing/geckodriver/Support.html'
     VERSION_DRIVER = '0.26.0'
     REGEX_LINK = 'href="(/mozilla/geckodriver/releases/download/.+?%s.+?)"'
 
@@ -40,11 +45,14 @@ class Firefox(SeleniumFirefox):
         if detect_driver_path:
             exec_path, log_path = self.find_driver_path(driver_version)
             if exec_path is None:
-                raise RuntimeError('Platform %s not recognised. Please install geckodriver manually, add it to the PATH, and set the detect_driver_path to False.' % sys.platform)
+                raise RuntimeError('Platform %s not recognised. Please install geckodriver manually, add it to the PATH, and set the detect_driver_path to False.' % platform)
             try:
                 SeleniumFirefox.__init__(self, options=options, executable_path=exec_path, service_log_path=log_path, *args, **kwargs)
-            except SessionNotCreatedException as e:
-                raise RuntimeError('Please, install a Firefox compatible with Geckodriver %s from this compatibility table: https://firefox-source-docs.mozilla.org/testing/geckodriver/Support.html.' % Firefox.VERSION_DRIVER) from e
+            except SessionNotCreatedException:
+                client_path = join(PATH_RESOURCES, 'firefox', driver_version)
+                if not exists(client_path):
+                    exec_path = self.download_firefox(driver_version)
+                SeleniumFirefox.__init__(self, options=options, firefox_binary=exec_path, executable_path=exec_path, service_log_path=log_path, *args, **kwargs)
         else:
             SeleniumFirefox.__init__(self, options=options, *args, **kwargs)
         self.set_page_load_timeout(timeout)
@@ -90,8 +98,84 @@ class Firefox(SeleniumFirefox):
         self.get(url, *args, **kwargs)
         self.execute_script(SCRIPT_ADD_RENDER, render_selector)
 
-# --- auxiliar ----------------------------------------------------------------
+    def download_firefox(self, driver_version, locale='en-US'):
+        ''' Downloads the Firefox client and installs it at a folder named after
+        the gecko version using a compatibility table.
+        Also returns the path of the newly installed firefox executable. '''
+        document = get(Firefox.URL_RELEASES % '')
+        repo = findall(r'href=".+?/releases/([0-9.]+?)esr/?"', document.text)
+        document = get(Firefox.URL_TABLE)
+        versions = findall(r'<tr>\s*<td>(.+?)\s*<td>.+?<td>(.+?)\s*<td>(.+?)\s', document.text, flags=DOTALL)
+        versions = {
+            version: {'min': min_ver, 'max': max_ver if max_ver != 'n/a' else repo[-1]}
+            for version, min_ver, max_ver in versions
+        }
+        if driver_version in versions:
+            if versions[driver_version]['max'] in repo:
+                version = versions[driver_version]['max']
+            else:
+                candidates = [
+                    v for v in repo
+                    if int(v.split('.')[0]) >= int(versions[driver_version]['min'])
+                    and int(v.split('.')[0]) <= int(versions[driver_version]['max'])
+                ]
+                version = candidates[-1] if len(candidates) > 0 else None
+                if version is None:
+                    raise RuntimeError('No firefox esr version available')
+            bits = 64 if maxsize > 2**32 else 32
+            if platform.startswith('linux'):
+                if bits == 64:
+                    identifier = 'linux-x86_64'
+                else:
+                    identifier = 'linux-i686'
+                file = 'firefox-%sesr.tar.bz2' % version
+            elif platform == 'win32':
+                identifier = 'win%s' % bits
+                file = 'Firefox Setup %sesr.exe' % version
+            elif platform == 'darwin':
+                identifier = 'mac'
+                file = 'Firefox %sesr.pkg' % version
+            url = Firefox.URL_RELEASES % ('%sesr/%s/%s/%s' % (version, identifier, locale, file))
+            path = join(PATH_RESOURCES, file)
+            download_file(url, path)
+            target = join(PATH_RESOURCES, 'firefox', driver_version)
+            if not exists(target):
+                mkdir(join(PATH_RESOURCES, 'firefox', driver_version))
+            if platform == 'win32':
+                run([join(PATH_RESOURCES, '7-zip', '7za.exe'), 'x', path, '-o' + join(PATH_RESOURCES, 'firefox'), '-y'])
+                remove(join(PATH_RESOURCES, 'firefox', 'setup.exe'))
+                remove(path)
+                files = glob(join(PATH_RESOURCES, 'firefox', 'core', '*'), recursive=True)
+                for file in files:
+                    file_name = basename(file)
+                    move(file, join(target, file_name))
+                rmdir(join(PATH_RESOURCES, 'firefox', 'core'))
+                exec_path = join(target, 'firefox.exe')
+            elif platform.startswith('linux'):
+                from bz2 import open as open_bz2
+                from tarfile import open as open_tar
+                with open_bz2(path, 'rb') as i, open(join(target, 'firefox.tar'), 'wb') as o:
+                    copyfileobj(i, o)
+                with open_tar(join(target, 'firefox.tar')) as i:
+                    i.extractall(target)
+                remove(join(target, 'firefox.tar'))
+                rename(join(target, 'firefox'), join(target, 'firefox-%s' % driver_version))
+                files = glob(join(target, 'firefox-%s' % driver_version, '*'), recursive=True)
+                for file in files:
+                    file_name = basename(file)
+                    move(file, join(target, file_name))
+                rmdir(join(target, 'firefox-%s' % driver_version))
+                exec_path = join(target, 'firefox')
+            elif platform == 'darwin':
+                # TODO: Implement download for MacOS
+                raise NotImplementedError('MacOS firefox auto-download support feature is a pending feature')
+            else:
+                raise RuntimeError('Platform %s not recognised.' % platform)
+        else:
+            raise RuntimeError('Gecko driver version is invalid or unrecognized')
+        return exec_path
 
+# --- auxiliar ----------------------------------------------------------------
 
 def download_file(url, path=None, chunk_size=10**5):
     ''' Downloads a file keeping track of the progress. '''
