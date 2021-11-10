@@ -1,9 +1,7 @@
 from setuptools import find_packages, setup
 from sys import version_info
 
-if version_info[0] != 3:
-    print("This script requires Python 3.")
-    exit()
+assert version_info.major == 3 and version_info.minor >= 6, 'Python 3.6+ required'
 
 with open('README.md', 'r', encoding='utf-8') as f:
     long_description = f.read()
