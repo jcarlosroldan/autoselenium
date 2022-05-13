@@ -3,11 +3,11 @@ from sys import version_info
 
 assert version_info.major == 3 and version_info.minor >= 6, 'Python 3.6+ required'
 
-with open('README.md', 'r', encoding='utf-8') as f:
-    long_description = f.read()
+with open('README.md', 'r', encoding='utf-8') as fp:
+    long_description = fp.read()
 
-with open('requirements.txt', 'r', encoding='utf-8') as f:
-    requirements = f.read().strip().split()
+with open('requirements.txt', 'r', encoding='utf-8') as fp:
+    requirements = fp.read().strip().split()
 
 setup(
     name='autoselenium',
