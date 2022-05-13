@@ -49,7 +49,8 @@ class Firefox(SeleniumFirefox):
 		if browser_detection:
 			if browser_version == 'default':
 				browser_version = Firefox.VERSION_BROWSER
-			kwargs['firefox_binary'] = FirefoxBinary(self.detect_browser())
+			else:
+				kwargs['firefox_binary'] = FirefoxBinary(self.detect_browser())
 		if driver_detection:
 			if driver_version == 'default':
 				driver_version = Firefox.VERSION_DRIVER
