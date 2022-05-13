@@ -25,7 +25,7 @@ class Firefox(SeleniumFirefox):
 
 	def __init__(
 		self,
-		browser_detection=True, browser_version='default',
+		browser_detection='default', browser_version='default',
 		driver_detection=True, driver_version='default',
 		headless=False,
 		disable_images=True,
