@@ -19,7 +19,7 @@ with open(join(PATH_RESOURCES, 'add_render.js'), 'r', encoding='utf-8') as fp:
 
 class Firefox(SeleniumFirefox):
     URL_DRIVER = 'https://github.com/mozilla/geckodriver/releases/tag/v%s'
-    VERSION_DRIVER = '0.26.0'
+    VERSION_DRIVER = '0.31.0'
     REGEX_LINK = 'href="(/mozilla/geckodriver/releases/download/.+?%s.+?)"'
 
     def __init__(self, headless=False, disable_images=True, open_links_same_tab=False, disable_flash=True, detect_driver_path=True, timeout=15, driver_version='default', options=None, *args, **kwargs):
