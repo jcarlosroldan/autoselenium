@@ -13,7 +13,7 @@ with open('requirements.txt', 'r', encoding='utf-8') as f:
 
 setup(
     name='autoselenium',
-    version='0.1.6',
+    version='0.1.7',
     author='Juan C. Roldán',
     author_email='juancarlos@sevilla.es',
     description='Ready-to-run Selenium.',
