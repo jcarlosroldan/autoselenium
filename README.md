@@ -1,80 +1,211 @@
-# AutoSelenium: Ready-to-run Selenium
+# AutoSelenium: Zero-Setup Selenium
 
-This Python 3 library solves most of the problems usually found when using Selenium.
+This Python 3 library eliminates all setup headaches when using Selenium by automatically downloading and managing both Firefox and geckodriver.
 
 ## Installing
 
-1. Install a version of Firefox compatible with geckodriver 0.26.0 (see this [compatibility table](https://firefox-source-docs.mozilla.org/testing/geckodriver/Support.html))
-2. Install this library via pip using: `pip install autoselenium`
+```bash
+pip install autoselenium
+```
+
+That's it! No manual downloads, no PATH configuration, no compatibility checking.
 
 ## Usage
 
 ```python
 >>> from autoselenium import Firefox
+>>> from selenium.webdriver.common.by import By
 >>>
+>>> # Uses system Firefox with auto-downloaded geckodriver
 >>> driver = Firefox(headless=True)
 >>>
->>> driver.get('https://juancroldan.com')
->>> driver.find_element_by_tag_name('div').get_attribute('outerHTML')
-'<div id="mw-page-base" class="noprint"></div>'
+>>> driver.get('https://example.com')
+>>> driver.find_element(By.TAG_NAME, 'div').get_attribute('outerHTML')
+'<div><h1>Example Domain</h1><p>This domain is for use in illustrative examples...</p></div>'
 >>>
->>> driver.get_with_render('https://juancroldan.com')
->>> driver.find_element_by_tag_name('div').get_attribute('outerHTML')
-'<div id="mw-page-base" class="noprint"\
-	data-xpath="/html[1]/body[1]/div[1]"\
-	data-computed-style="align-content:normal;align-items:normal;...;z-index:auto"\
-	data-width="1356" data-height="80"\
-	data-width-rel="1" data-height-rel="0.11527377521613832"></div>'
+>>> # Add rendering data to elements
+>>> driver.get_with_render('https://example.com')
+>>> driver.find_element(By.TAG_NAME, 'div').get_attribute('outerHTML')
+'<div data-xpath="/html[1]/body[1]/div[1]" data-computed-style="display:block;margin:0px;..." data-width="1200" data-height="600" data-width-rel="1" data-height-rel="0.5">...'
+>>>
+>>> # Use specific browser and driver versions
+>>> driver = Firefox(browser_detection=True, browser_version='120.0', driver_version='0.35.0')
+>>>
+>>> driver.quit()
 ```
 
-This library only have one class: `Firefox`, a child of `selenium.drivers.Firefox` with extended construction parameters:
+## Parameters
 
-* `headless`: A boolean, False by default. When true, the Firefox interface won't be shown.
-* `detect_driver_path`: A boolean, True by default. When true, geckodriver will be automatically located and downloaded.
-* `disable_images`: A boolean, True by default. When true, images won't be loaded to improve the performance.
-* `disable_flash`: A boolean, True by default. When true, Flash will be disabled.
-* `open_links_same_tab`: A boolean, False by default. When true, even new tab links will be opened in the same tab.
-* `timeout`: An integer, 15 by default. Page load timeout.
-* `version`: A string, 0.26.0 by default. If `detect_driver_path` is set, this geckodriver version will be downloaded. When a new geckodriver is relased, it is tested with the latest Selenium version to use the most recent compatible version.
-* Any of the [Selenium Firefox parameters](https://seleniumhq.github.io/selenium/docs/api/py/webdriver_firefox/selenium.webdriver.firefox.webdriver.html#module-selenium.webdriver.firefox.webdriver).
+The `Firefox` class extends `selenium.webdriver.Firefox` with these additional parameters:
 
-It also implements one extra function, `driver.get_with_render(url, render_selector='body')`, which works the same way as `driver.get(url)`, processing the nodes selected by `render_selector` with a few rendering operations:
+* `browser_detection`: Boolean, False by default. When True, downloads and uses a specific Firefox version instead of system Firefox.
+* `browser_version`: String, 'default' by default. Firefox version to download. Use 'default' for latest stable version.
+* `driver_detection`: Boolean, True by default. When True, automatically downloads the appropriate geckodriver.
+* `driver_version`: String, None by default. Geckodriver version to use. When None, uses latest version.
+* `headless`: Boolean, False by default. When True, runs Firefox without a GUI.
+* `disable_images`: Boolean, True by default. When True, disables image loading for better performance.
+* `disable_flash`: Boolean, True by default. When True, disables Flash plugin.
+* `open_links_same_tab`: Boolean, False by default. When True, forces all links to open in the same tab.
+* `timeout`: Integer, 30 by default. Page load timeout in seconds.
+* `options`: Firefox Options object, None by default. Custom Firefox options (merged with above settings).
 
-* Nodes without rendering are removed.
-* For every node and child, a few data properties are added:
-	* `data-xpath`: XPath of the node.
-	* `data-computed-style`: Computed style of the nodes, using the same notation of the `style` element attribute.
-	* `data-width`: Width of the node.
-	* `data-height`: Height of the node.
-	* `data-width-rel`: Width of the node relative to the page width.
-	* `data-height-rel`: Height of the node relative to the page height.
+All standard [Selenium Firefox parameters](https://selenium-python.readthedocs.io/api.html#selenium.webdriver.firefox.webdriver.WebDriver) are also supported.
+
+## Methods
+
+### `get_with_render(url, render_selector='body')`
+
+Works like `driver.get(url)` but adds rendering metadata to elements selected by `render_selector`:
+
+* **`data-xpath`**: XPath of the element
+* **`data-computed-style`**: Full computed CSS styles
+* **`data-width`**: Element width in pixels
+* **`data-height`**: Element height in pixels  
+* **`data-width-rel`**: Width relative to page width (0-1)
+* **`data-height-rel`**: Height relative to page height (0-1)
+
+Elements without rendering (display:none, etc.) are automatically removed.
 
 ## Features
 
-* Full Selenium compatibility: the automatic drivers inherit the Selenium driver, so every available functionality is preserved.
-* Geckodriver management: a valid Geckodriver is automatically downloaded, unzipped and stored according to the Selenium version and operative system.
-* Updated defaults: some of the most common driver configurations are automatically set, such as disabling Flash, ignoring the txt log file or closing the driver when the program ends. All of them can be edited via construction params.
-* Rendering analysis: the rendering features such as computed style, width, height or XPath are added to the page source when using `driver.get_with_render` instead of `driver.get`.
+### 🚀 **Zero Configuration**
+- Automatically downloads geckodriver for your platform (including ARM64)
+- Optionally downloads Firefox itself for complete version control
+- Works out of the box on Windows, macOS, and Linux
 
-## Contributions ✨
+### 🔄 **Smart Version Management** 
+- Automatically uses latest geckodriver and Firefox versions
+- Caches downloads to avoid re-downloading
+- Supports manual version pinning for reproducible environments
 
-You can take any of the pending [enhancements](https://github.com/juancroldan/autoselenium/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement), work on it and open a pull request.
+### 🏗️ **Platform Support**
+- **Full ARM64 support** (Apple Silicon, Raspberry Pi, etc.)
+- All major platforms: Windows (32/64/ARM64), macOS (Intel/ARM64), Linux (32/64/ARM64)
+- Solves the platform compatibility issues that break vanilla Selenium
 
-## Changes
+### ⚡ **Performance Optimized**
+- Images disabled by default for faster loading
+- Progress bars for large downloads (using tqdm)
+- Efficient caching prevents redundant downloads
 
-Find here the changes on this library (from recent to older) and the features of each version. We follow [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html) guidelines to improve the dependency management automation.
+### 🔧 **Developer Friendly**
+- Full Selenium 4 compatibility
+- Modern Python API (no deprecated methods)
+- Automatic cleanup on exit
+- Rich rendering analysis tools
 
-### v0.1.0
+## Requirements
 
-Relased on Oct 28, 2019.
+- Python 3.7+
+- requests
+- selenium >= 4.0
+- tqdm
 
-* More helpful exceptions (including install exceptions).
-* Friendlier readme.
-* Bugfix: now compatible with any Python 3 library.
+## Platform-Specific Notes
 
-### v0.0.1
+### **Raspberry Pi / ARM64 Systems**
+AutoSelenium specifically solves ARM64 compatibility issues that break standard Selenium:
 
-Released on Oct 10, 2019.
+```python
+# This fails on ARM64 with vanilla Selenium
+driver = webdriver.Firefox()  # ❌ "Unsupported platform/architecture combination"
 
-* Initial package upload.
-* Removed table-specific features.
+# This works perfectly with AutoSelenium  
+driver = Firefox()  # ✅ Downloads ARM64 geckodriver automatically
+```
+
+### **Isolated Environments**
+Perfect for Docker, CI/CD, or any environment where you can't install Firefox:
+
+```python
+# Downloads everything needed automatically
+driver = Firefox(browser_detection=True, headless=True)  # ✅ Completely self-contained
+```
+
+## Examples
+
+### Basic Web Scraping
+```python
+from autoselenium import Firefox
+from selenium.webdriver.common.by import By
+
+driver = Firefox(headless=True)
+driver.get('https://example.com')
+title = driver.find_element(By.TAG_NAME, 'h1').text
+print(f'Page title: {title}')
+driver.quit()
+```
+
+### Version-Controlled Testing
+```python
+# Pin exact versions for reproducible tests
+driver = Firefox(
+    browser_detection=True,
+    browser_version='119.0',
+    driver_version='0.34.0',
+    headless=True
+)
+```
+
+### Rendering Analysis
+```python
+driver = Firefox()
+driver.get_with_render('https://example.com')
+
+# Find all visible elements with their dimensions
+elements = driver.find_elements(By.CSS_SELECTOR, '[data-width]')
+for el in elements:
+    width = el.get_attribute('data-width')
+    height = el.get_attribute('data-height') 
+    xpath = el.get_attribute('data-xpath')
+    print(f'{xpath}: {width}x{height}px')
+```
+
+## Troubleshooting
+
+### Downloads Failing
+If downloads fail, check your internet connection and try:
+```python
+# Use specific versions instead of 'default'
+driver = Firefox(browser_version='120.0', driver_version='0.34.0')
+```
+
+### Permission Errors
+Ensure the script has write permissions to the package directory, or run:
+```bash
+pip install --user autoselenium
+```
+
+## Contributing
+
+Found a bug or want to add a feature? Check out the [issues](https://github.com/juancroldan/autoselenium/issues) and submit a pull request!
+
+## Changelog
+
+### v1.0.0 (2024)
+
+**Major Rewrite - Breaking Changes**
+- 🚀 **Full ARM64 support** (Apple Silicon, Raspberry Pi)
+- 🔄 **Automatic browser downloads** with `browser_detection=True`
+- ⚡ **Latest version detection** for both Firefox and geckodriver
+- 🛠️ **Selenium 4 compatibility** (updated from Selenium 3)
+- 📊 **Download progress bars** using tqdm
+- 🧹 **Simplified API** with better parameter names
+- 🌐 **Extended platform support** (Windows ARM64, Linux ARM64)
+
+**Breaking Changes from v0.x:**
+- Parameter `detect_driver_path` → `driver_detection` 
+- Parameter `version` → `driver_version`
+- Requires Selenium 4+ and Python 3.7+
+- Default timeout increased from 15s to 30s
+
+### v0.1.0 (2019)
+
+- More helpful exceptions
+- Python 3 compatibility fixes
+- Documentation improvements
+
+### v0.0.1 (2019)
+
+- Initial release
+- Basic geckodriver management
