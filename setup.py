@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 from sys import version_info
 
-assert version_info.major == 3 and version_info.minor >= 6, 'Python 3.6+ required'
+assert version_info.major == 3 and version_info.minor >= 10, 'Python 3.10+ required'
 
 with open('README.md', 'r', encoding='utf-8') as fp:
     long_description = fp.read()
@@ -11,8 +11,8 @@ with open('requirements.txt', 'r', encoding='utf-8') as fp:
 
 setup(
     name='autoselenium',
-    version='0.1.10',
-    author='Juan C. Roldán',
+    version='1.0.0',
+    author='J. Carlos Roldán',
     author_email='juancarlos@sevilla.es',
     description='Ready-to-run Selenium.',
     long_description=long_description,
