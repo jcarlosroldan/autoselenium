@@ -54,13 +54,11 @@ class Chrome(AutoBrowser, SeleniumChrome):
 			options.add_experimental_option('prefs', {'profile.managed_default_content_settings.images': 2})
 		if disable_flash:
 			options.add_argument('--disable-plugins')
-		# Browser setup
 		if browser_detection:
 			if browser_version == 'default':
 				browser_version = self._get_latest_chrome_version()
 			browser_path = self.detect_browser(browser_version)
 			options.binary_location = browser_path
-		# Service setup
 		service = None
 		if driver_detection:
 			driver_path = self._get_driver(driver_version)
@@ -92,29 +90,22 @@ class Chrome(AutoBrowser, SeleniumChrome):
 		''' Returns the platform identifier for Chrome downloads. '''
 		sys_name, arch = _get_system_info()
 		if sys_name == 'linux':
-			if arch in ['x86_64', 'amd64']:
-				return 'linux64'
-			else:
-				return 'linux32'
+			if arch in ['x86_64', 'amd64']: return 'linux64'
+			else: return 'linux32'
 		elif sys_name == 'darwin':
-			if arch in ['arm64', 'aarch64']:
-				return 'mac-arm64'
-			else:
-				return 'mac-x64'
+			if arch in ['arm64', 'aarch64']: return 'mac-arm64'
+			else: return 'mac-x64'
 		elif sys_name == 'windows':
-			if arch in ['x86_64', 'amd64']:
-				return 'win64'
-			else:
-				return 'win32'
+			if arch in ['x86_64', 'amd64']: return 'win64'
+			else: return 'win32'
 		else:
 			raise RuntimeError(f'Unsupported platform for Chrome: {sys_name}/{arch}')
 
 	def _download_browser(self, platform_id, browser_version):
 		''' Downloads and extracts Chrome for the given platform. '''
-		_ensure_dir(PATH_RESOURCES)
+		makedirs(PATH_RESOURCES, exist_ok=True)
 		browser_dir = PATH_RESOURCES + f'/chrome-{platform_id}-{browser_version}'
-		_ensure_dir(browser_dir)
-		# Chrome download URLs
+		makedirs(browser_dir, exist_ok=True)
 		base_url = 'https://dl.google.com/chrome/install/'
 		if platform_id == 'win64':
 			url = base_url + 'GoogleChromeStandaloneEnterprise64.msi'
@@ -131,7 +122,6 @@ class Chrome(AutoBrowser, SeleniumChrome):
 		compressed_path = PATH_RESOURCES + f'/chrome-{browser_version}.{ext}'
 		print(f'Downloading Chrome v{browser_version} for {platform_id}...')
 		_download_with_progress(url, compressed_path)
-		# Extract Chrome based on format
 		if ext in ['msi', 'deb']:
 			raise RuntimeError(f'Chrome installer extraction not yet implemented for {platform_id}. Please install Chrome manually.')
 		elif ext == 'dmg':
@@ -152,20 +142,13 @@ class Chrome(AutoBrowser, SeleniumChrome):
 		''' Gets the chromedriver version compatible with installed Chrome. '''
 		chrome_version = self._get_installed_chrome_version()
 		if chrome_version:
-			print(f'   Detected Chrome version: {chrome_version}')
-			# Get major version (e.g., "136" from "136.0.7103.116")
 			major_version = chrome_version.split('.')[0]
 			try:
-				# Try to get compatible driver version for this Chrome version
 				response = get(f'https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_{major_version}')
 				if response.status_code == 200:
-					compatible_version = response.text.strip()
-					print(f'   Using compatible chromedriver: {compatible_version}')
-					return compatible_version
+					return response.text.strip()
 			except:
 				pass
-		# Fallback to latest stable if we can't determine compatibility
-		print('   Could not detect Chrome version, using latest chromedriver')
 		return self._get_latest_driver_version()
 
 	def _get_installed_chrome_version(self):
@@ -187,17 +170,14 @@ class Chrome(AutoBrowser, SeleniumChrome):
 				try:
 					import winreg
 					key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Google\Chrome\BLBeacon')
-					version, _ = winreg.QueryValueEx(key, 'version')
-					return version
+					return winreg.QueryValueEx(key, 'version')[0]
 				except ImportError:
 					return None
 			else:
 				return None
 			if result.returncode == 0:
-				# Extract version from output like "Google Chrome 136.0.7103.116"
 				version_line = result.stdout.strip()
-				version = version_line.split()[-1]
-				return version
+				return version_line.split()[-1]
 		except:
 			pass
 		return None
@@ -211,35 +191,29 @@ class Chrome(AutoBrowser, SeleniumChrome):
 	def _get_driver_platform(self):
 		''' Returns the platform identifier for chromedriver downloads. '''
 		sys_name, arch = _get_system_info()
-		if sys_name == 'linux':
-			return 'linux64'
+		if sys_name == 'linux': return 'linux64'
 		elif sys_name == 'darwin':
-			if arch in ['arm64', 'aarch64']:
-				return 'mac-arm64'
-			else:
-				return 'mac-x64'
+			if arch in ['arm64', 'aarch64']: return 'mac-arm64'
+			else: return 'mac-x64'
 		elif sys_name == 'windows':
-			if arch in ['x86_64', 'amd64']:
-				return 'win64'
-			else:
-				return 'win32'
+			if arch in ['x86_64', 'amd64']: return 'win64'
+			else: return 'win32'
 		else:
 			raise RuntimeError(f'Unsupported platform: {sys_name}/{arch}')
 
 	def _download_driver(self, platform_id, driver_path, driver_version):
 		''' Downloads and extracts chromedriver for the given platform. '''
-		_ensure_dir(PATH_RESOURCES)
+		makedirs(PATH_RESOURCES, exist_ok=True)
 		url = f'https://storage.googleapis.com/chrome-for-testing-public/{driver_version}/{platform_id}/chromedriver-{platform_id}.zip'
 		compressed_path = PATH_RESOURCES + '/chromedriver.zip'
 		print(f'Downloading chromedriver v{driver_version} for {platform_id}...')
 		_download_with_progress(url, compressed_path)
-		# Extract driver
 		with ZipFile(compressed_path, 'r') as zf:
 			driver_name = 'chromedriver.exe' if platform_id.startswith('win') else 'chromedriver'
 			with open(driver_path, 'wb') as f:
 				f.write(zf.read(f'chromedriver-{platform_id}/{driver_name}'))
 		remove(compressed_path)
-		_make_executable(driver_path)
+		chmod(driver_path, 0o755)
 
 class Firefox(AutoBrowser, SeleniumFirefox):
 	def __init__(
@@ -287,14 +261,10 @@ class Firefox(AutoBrowser, SeleniumFirefox):
 		''' Detects and downloads Firefox browser for the current platform. '''
 		platform_id = self._get_browser_platform()
 		browser_dir = PATH_RESOURCES + f'/firefox-{platform_id}-{browser_version}'
-		if platform_id.startswith('win'):
-			browser_path = browser_dir + '/firefox/firefox.exe'
-		elif platform_id == 'mac':
-			browser_path = browser_dir + '/Firefox.app/Contents/MacOS/firefox'
-		else:
-			browser_path = browser_dir + '/firefox/firefox'
-		if not exists(browser_path):
-			self._download_browser(platform_id, browser_version)
+		if platform_id.startswith('win'): browser_path = browser_dir + '/firefox/firefox.exe'
+		elif platform_id == 'mac': browser_path = browser_dir + '/Firefox.app/Contents/MacOS/firefox'
+		else: browser_path = browser_dir + '/firefox/firefox'
+		if not exists(browser_path): self._download_browser(platform_id, browser_version)
 		return browser_path
 
 	def _get_latest_firefox_version(self):
@@ -307,26 +277,20 @@ class Firefox(AutoBrowser, SeleniumFirefox):
 		''' Returns the platform identifier for Firefox downloads. '''
 		sys_name, arch = _get_system_info()
 		if sys_name == 'linux':
-			if arch in ['x86_64', 'amd64']:
-				return 'linux-x86_64'
-			else:
-				return 'linux-i686'
-		elif sys_name == 'darwin':
-			return 'mac'
+			if arch in ['x86_64', 'amd64']: return 'linux-x86_64'
+			else: return 'linux-i686'
+		elif sys_name == 'darwin': return 'mac'
 		elif sys_name == 'windows':
-			if arch in ['x86_64', 'amd64']:
-				return 'win64'
-			else:
-				return 'win32'
+			if arch in ['x86_64', 'amd64']: return 'win64'
+			else: return 'win32'
 		else:
 			raise RuntimeError(f'Unsupported platform for Firefox: {sys_name}/{arch}')
 
 	def _download_browser(self, platform_id, browser_version):
 		''' Downloads and extracts Firefox for the given platform. '''
-		_ensure_dir(PATH_RESOURCES)
+		makedirs(PATH_RESOURCES, exist_ok=True)
 		browser_dir = PATH_RESOURCES + f'/firefox-{platform_id}-{browser_version}'
-		_ensure_dir(browser_dir)
-		# Build URL and extension based on platform
+		makedirs(browser_dir, exist_ok=True)
 		base_url = f'https://archive.mozilla.org/pub/firefox/releases/{browser_version}/'
 		if platform_id in ['win64', 'win32']:
 			url = base_url + f'{platform_id}/en-US/firefox-{browser_version}.zip'
@@ -340,7 +304,6 @@ class Firefox(AutoBrowser, SeleniumFirefox):
 		compressed_path = PATH_RESOURCES + f'/firefox-{browser_version}.{ext}'
 		print(f'Downloading Firefox v{browser_version} for {platform_id}...')
 		_download_with_progress(url, compressed_path)
-		# Extract Firefox based on format
 		if ext == 'zip':
 			with ZipFile(compressed_path, 'r') as zf:
 				zf.extractall(browser_dir)
@@ -372,35 +335,27 @@ class Firefox(AutoBrowser, SeleniumFirefox):
 		''' Returns the platform identifier for geckodriver downloads. '''
 		sys_name, arch = _get_system_info()
 		if sys_name == 'linux':
-			if arch in ['aarch64', 'arm64']:
-				return 'linux-aarch64'
-			elif arch in ['x86_64', 'amd64']:
-				return 'linux64'
-			else:
-				return 'linux32'
+			if arch in ['aarch64', 'arm64']: return 'linux-aarch64'
+			elif arch in ['x86_64', 'amd64']: return 'linux64'
+			else: return 'linux32'
 		elif sys_name == 'darwin':
-			if arch in ['arm64', 'aarch64']:
-				return 'macos-aarch64'
-			else:
-				return 'macos'
+			if arch in ['arm64', 'aarch64']: return 'macos-aarch64'
+			else: return 'macos'
 		elif sys_name == 'windows':
-			if arch in ['aarch64', 'arm64']:
-				return 'win-aarch64'
+			if arch in ['aarch64', 'arm64']: return 'win-aarch64'
 			else:
-				bits = 64 if maxsize > 2**32 else 32
-				return f'win{bits}'
+				return f'win{64 if maxsize > 2**32 else 32}'
 		else:
 			raise RuntimeError(f'Unsupported platform: {sys_name}/{arch}')
 
 	def _download_driver(self, platform_id, driver_path, driver_version):
 		''' Downloads and extracts geckodriver for the given platform. '''
-		_ensure_dir(PATH_RESOURCES)
+		makedirs(PATH_RESOURCES, exist_ok=True)
 		ext = 'zip' if platform_id.startswith('win') else 'tar.gz'
 		url = f'https://github.com/mozilla/geckodriver/releases/download/v{driver_version}/geckodriver-v{driver_version}-{platform_id}.{ext}'
 		compressed_path = PATH_RESOURCES + f'/geckodriver.{ext}'
 		print(f'Downloading geckodriver v{driver_version} for {platform_id}...')
 		_download_with_progress(url, compressed_path)
-		# Extract driver
 		if ext == 'zip':
 			with ZipFile(compressed_path, 'r') as zf:
 				with open(driver_path, 'wb') as f:
@@ -411,7 +366,7 @@ class Firefox(AutoBrowser, SeleniumFirefox):
 					with open(driver_path, 'wb') as f:
 						f.write(gd.read())
 		remove(compressed_path)
-		_make_executable(driver_path)
+		chmod(driver_path, 0o755)
 
 def _download_with_progress(url, path):
 	''' Downloads a file with progress bar. '''
@@ -430,21 +385,12 @@ def _extract_dmg(compressed_path, browser_dir, app_name):
 	''' Extracts a DMG file on macOS. '''
 	import subprocess
 	mount_point = PATH_RESOURCES + '/temp_mount'
-	_ensure_dir(mount_point)
+	makedirs(mount_point, exist_ok=True)
 	subprocess.run(['hdiutil', 'attach', '-quiet', '-mountpoint', mount_point, compressed_path], check=True)
 	app_path = mount_point + '/' + app_name
 	subprocess.run(['cp', '-R', app_path, browser_dir + '/'], check=True)
 	subprocess.run(['hdiutil', 'detach', '-quiet', mount_point], check=True)
 	rmdir(mount_point)
-
-def _ensure_dir(path):
-	''' Creates directory if it doesn't exist. '''
-	if not exists(path):
-		makedirs(path)
-
-def _make_executable(path):
-	''' Makes file executable. '''
-	chmod(path, 0o755)
 
 def _get_system_info():
 	''' Returns system name and architecture. '''
